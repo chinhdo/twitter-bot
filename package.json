@@ -1,0 +1,29 @@
+{
+  "name": "twitter-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "npm run build:live",
+    "build": "tsc -p .",
+    "build:live": "nodemon -V --watch src/**/*.ts --exec ts-node src/index.ts",
+    "test": "jest",
+    "watch-test": "npm run test -- --watchAll"
+  },
+  "keywords": [],
+  "author": "Chinh Do",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jest": "^25.2.1",
+    "@types/node": "^13.13.5",
+    "jest": "^26.0.1",
+    "nodemon": "^2.0.3",
+    "ts-jest": "^25.5.1",
+    "ts-node": "^8.10.1",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "twitter-lite": "^0.11.0"
+  }
+}
