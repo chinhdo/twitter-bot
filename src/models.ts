@@ -5,4 +5,5 @@ export class Tweet {
   public text: string | undefined;
   public userScreenName: string | undefined;
   public userFollowers: number | undefined;
+  public userFriends: number| undefined;
 }
