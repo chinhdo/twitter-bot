@@ -46,7 +46,7 @@ class TwitterBot {
       this.log(`Got ${searchResult.statuses.length} statuses from search.`);
 
       // Find matching tweets
-      let count = 0;      
+      let count = 0;
       while (true) {
         const s = searchResult.statuses[count];
         const likes = parseInt(s.favorite_count);
@@ -65,11 +65,11 @@ class TwitterBot {
         // * A reply
         // * From a user I already liked in the past week
         if (isProgressReport
-          && !isRetweet && likes < 10 && followers < 1000
-          && ! s.in_reply_to
-          && ! userAdded
-          ) {
-          numTweetsFound ++;
+          && !isRetweet && likes < 5 && followers < 500
+          && !s.in_reply_to
+          && !userAdded
+        ) {
+          numTweetsFound++;
           this.log(`** ${numTweetsFound} - ${s.user.screen_name} ${s.id_str} likes=${s.favorite_count} followers=${followers} ` +
             `in_reply_to=${s.in_reply_to_status_id} created=${s.created_at}\n${s.text}\n`);
 
@@ -112,7 +112,7 @@ class TwitterBot {
 
     let content = '';
     content += '<ul>';
-    for (let i=0; i<tweets.length; i++) {
+    for (let i = 0; i < tweets.length; i++) {
       const t = tweets[i];
       content += `<li>${t.userScreenName}"`;
       content += ` (${t.userFriends} / ${t.userFollowers}) <a href="https://twitter.com/${t.userScreenName}/status/${t.id}" class="tweet" target="_blank">${t.text}</a></li>`;
@@ -122,13 +122,62 @@ class TwitterBot {
     const html = template.replace(/\$CONTENT\$/gi, content);
 
     const path = 'lib/report.html';
-    fs.writeFileSync(path, html, {encoding: 'utf8'});
+    fs.writeFileSync(path, html, { encoding: 'utf8' });
   }
 
   async search(query: string, count: number = 1, maxId: string = ''): Promise<any> {
     const result = await this.twitClient.get("search/tweets",
-      { q: encodeURI(query), count: count, max_id: maxId ? maxId : undefined, lang: 'en'});
+      { q: encodeURI(query), count: count, max_id: maxId ? maxId : undefined, lang: 'en' });
     return result;
+  }
+
+  decStrNum(n: string) {
+    let result = n;
+    let i = n.length - 1;
+    while (i > -1) {
+      if (n[i] === "0") {
+        result = result.substring(0, i) + "9" + result.substring(i + 1);
+        i--;
+      }
+      else {
+        result = result.substring(0, i) + (parseInt(n[i], 10) - 1).toString() + result.substring(i + 1);
+        return result;
+      }
+    }
+    return result;
+  }
+
+  parseTwitterDate(twitterTs: string) {
+    return new Date(Date.parse(twitterTs.replace(/( \+)/, " UTC$1")));
+    //sample: Wed Mar 13 09:06:07 +0000 2013 
+  }
+
+  async timeline() {
+    let count = 0;
+    let maxId = "";
+    let done = false;
+    do {
+      const remaining = (await this.getRateLimit()).resources["statuses"]["/statuses/user_timeline"].remaining;
+      if (remaining > 1) {
+        const params: any = { screen_name: ["chinhdo"], trim_user: 1, count: 200, include_rts: false };
+        if (maxId) {
+          params["max_id"] = maxId;
+        }
+        const statuses = await this.twitClient.get("statuses/user_timeline", params);
+        if (statuses.length <= 0) {
+          done = true;
+        }
+        for (let i = 0; i < statuses.length; i++) {
+          count++;
+          const s = statuses[i];
+          maxId = this.decStrNum(s.id_str);
+          const d = this.parseTwitterDate(s.created_at);
+          console.log(`${d.toISOString()} c=${count} id=${s.id_str} msg=(${s.text.replace(/\r|\n/g, " ").slice(0, 50)})`);
+        }
+      }
+      await this.sleep(250);
+    } while (!done);
+
   }
 
   async like(tweetId: string): Promise<void> {

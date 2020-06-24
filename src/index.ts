@@ -1,8 +1,22 @@
 import TwitterBot from "./twitter-bot";
-
-// TODO: Logging package
+import yargs from "yargs";
 
 (async () => {
+
+  const argv = yargs
+    .command("timeline", "Get User Timeline")
+    .help()
+    .alias("help", "h")
+    .argv;
+
+  // default
+  if (argv._.length === 0) {
+    argv._.push("timeline");
+  }
+
   const bot = new TwitterBot();
-  await bot.start();
+  if (argv._.includes("timeline")) {
+    await bot.timeline();
+  }
+
 })();
